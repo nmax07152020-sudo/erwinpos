@@ -278,16 +278,13 @@ function printerStatus(){const p=db.store.printer||{};if(p.mode==='ble')return b
 function showReceipt(s){openModal(`<div class="receipt"><h3>${db.store.name}</h3><div style="text-align:center;font-size:12px">${db.store.address}<br>${db.store.phone||''}</div><div class="rhr"></div><div class="rline"><span>Invoice</span><span>${s.invoice}</span></div><div class="rline"><span>Date</span><span>${dateStr(s.ts)}</span></div><div class="rline"><span>Cashier</span><span>${s.cashier||'Admin'}</span></div><div class="rhr"></div>${s.items.map(i=>`<div class="rline"><span>${formatQty(i.qty,i.unit)} ${unitText(i.unit)} × ${i.name}</span><span>${money(i.price*i.qty)}</span></div>`).join('')}<div class="rhr"></div><div class="rline"><b>TOTAL</b><b>${money(s.total)}</b></div><div class="rline"><span>${s.method}</span><span>${money(s.payment)}</span></div>${s.method==='GCash'?`<div class="rline"><span>GCash Ref</span><span>${s.reference||'—'}</span></div>`:''}<div class="rline"><span>Change</span><span>${money(s.change)}</span></div><div class="rhr"></div><div style="text-align:center">${db.store.footer}</div><div class="notice" style="margin-top:12px;text-align:center">Printer: <b>${printerStatus()}</b></div></div><div style="display:flex;gap:8px;margin-top:15px"><button class="btn primary" style="flex:1" onclick="printReceipt('${s.invoice}')">🖨 Print / Bluetooth</button><button class="btn" onclick="closeModal();render()">Close</button></div>`);if(db.store.printer?.autoPrint)setTimeout(()=>printReceipt(s.invoice),180)}
 async function printReceipt(inv){let s=db.sales.find(x=>x.invoice===inv);if(!s)return;if(db.store.printer?.mode==='ble'&&blePrinter.characteristic){try{await blePrintReceipt(s);toast('Receipt sent to Bluetooth printer');return}catch(e){toast('Bluetooth print failed; opening system print');}}systemPrintReceipt(s)}
 function systemPrintReceipt(s){let paper=db.store.printer?.paper==='80mm'?'80mm':'58mm';let w=window.open('','_blank','width=420,height=700');if(!w)return toast('Popup blocked. Allow popups for printing.');w.document.write(`<html><head><title>${s.invoice}</title><style>@page{size:${paper} auto;margin:0}body{font-family:monospace;padding:8px;width:${paper};box-sizing:border-box;margin:0;font-size:12px}.r{width:100%;margin:auto}.x{display:flex;justify-content:space-between;gap:8px}.hr{border-top:1px dashed #000;margin:8px 0;text-align:center}.center{text-align:center}.total{font-size:16px;font-weight:800}</style>
-<style id="saripos-mobile-nav-fix-v3">
-@media (max-width: 700px) {
-  /* v7.1 Mobile Navigation Fix:
-     Hide the two extra leading mobile-only buttons (Store/24).
-     Keep the six actual POS navigation items. */
-  .mobile-nav > *:nth-child(1),
-  .mobile-nav > *:nth-child(2),
-  #mobileNav > *:nth-child(1),
-  #mobileNav > *:nth-child(2) {
-    display: none !important;
+<style id="saripos-mobile-nav-fix-v4">
+@media (max-width:700px) {
+  /* Mobile bottom/compact navigation: remove sidebar brand + user badge.
+     The six actual navigation buttons remain untouched. */
+  .side > .brand,
+  .side > .user-pill {
+    display:none !important;
   }
 }
 </style>
@@ -384,24 +381,5 @@ restoreSession();
 if(sessionUser) render();
 
 
-</script>
-
-<script id="saripos-mobile-nav-fix-v3-js">
-(function(){
-  function fixMobileNav(){
-    if (window.innerWidth > 700) return;
-    var labels = ['store','24'];
-    var candidates = Array.prototype.slice.call(document.querySelectorAll('nav a, nav button, .bottom-nav a, .bottom-nav button, [class*="nav"] a, [class*="nav"] button'));
-    candidates.forEach(function(el){
-      var t=(el.textContent||'').trim().toLowerCase().replace(/\s+/g,' ');
-      if (t==='store' || t==='24' || t.indexOf('store')===0 && t.length<15 || t==='24'){
-        el.style.display='none';
-      }
-    });
-  }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',fixMobileNav);
-  else fixMobileNav();
-  window.addEventListener('resize',fixMobileNav);
-})();
 </script>
 </body></html>
